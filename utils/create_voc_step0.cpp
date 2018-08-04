@@ -1,4 +1,3 @@
-
 //First step of creating a vocabulary is extracting features from a set of images. We save them to a file for next step
 #include <iostream>
 #include <vector>

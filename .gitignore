@@ -1,0 +1,17 @@
+doc/*
+build/*
+utils/utils/*
+bin/*.bin
+bin/*.yml
+bin/*.gz
+bin/create_voc_step0
+bin/create_voc_step1
+bin/demo_general
+bin/images/*_2.jpg
+bin/images/*_3.jpg
+bin/images/*_4.jpg
+bin/images/*_5.jpg
+
+
+
+
