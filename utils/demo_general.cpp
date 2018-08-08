@@ -52,24 +52,16 @@ vector<cv::Mat> loadFeatures(std::vector<string> path_to_images) throw (std::exc
     cv::Ptr<cv::Feature2D> fdetector;
     ORB_SLAM2::ORBextractor ORB_1(nfeatures, 1.2, 8, 20, 7);
     vector<cv::Mat> features;
-
-    cout << "Extracting  features..." << endl;
     for(size_t i = 0; i < path_to_images.size(); ++i) {
 		cv::Mat descriptors;
         vector<cv::KeyPoint> keypoints;
-
-        cout<<"reading image: "<<path_to_images[i]<<endl;
         cv::Mat image = cv::imread(path_to_images[i], 0);
-		if(image.empty()) throw std::runtime_error("Could not open image"+path_to_images[i]);
-        //cvtColor(image, image, COLOR_BGR2GRAY);
+		if(image.empty()) throw std::runtime_error("could not open image"+path_to_images[i]);
         GaussianBlur(image, image, Size(7, 7), 0, 0);
         equalizeHist(image, image);
-
-        cout<<"extracting features"<<endl;
         Mat im_copy = image.clone();
         (ORB_1)(image, im_copy, keypoints, descriptors);
         features.push_back(descriptors);
-
         drawKeypoints(image, keypoints, image, Scalar::all(-1), DrawMatchesFlags::DEFAULT);
     }
     return features;
@@ -86,7 +78,7 @@ vector<cv::Mat> loadImages(std::vector<string> path_to_images) throw (std::excep
         
         cout<<"reading image: "<<path_to_images[i]<<endl;
         cv::Mat image = cv::imread(path_to_images[i], 0);
-		if(image.empty()) throw std::runtime_error("Could not open image"+path_to_images[i]);
+		if(image.empty()) throw std::runtime_error("could not open image"+path_to_images[i]);
         //cvtColor(image, image, COLOR_BGR2GRAY);
         GaussianBlur(image, image, Size(7, 7), 0, 0);
         equalizeHist(image, image);
@@ -104,7 +96,7 @@ vector<cv::Mat> loadImages(std::vector<string> path_to_images) throw (std::excep
 void generate_db_file(vector<string> image_names)
 {
 	vector<cv::Mat> features = loadFeatures(image_names);
-	const int k = 18;
+	const int k = 12;
 	const int L = 6;
 	const WeightingType weight = TF_IDF;
 	const ScoringType score = L1_NORM;
@@ -118,48 +110,83 @@ void generate_db_file(vector<string> image_names)
 	cout<<"database file small_db.yml.gz saved"<<endl;
 }
 
-cv::Mat extract_features(Mat &img_3c, int &n_features, bool b_show)
+
+class BookRecognizer
 {
-	ORBextractor ORB_ext(n_features, 1.2, 8, 20, 7);
-	vector<cv::KeyPoint> keypoints;
-	cv::Mat descriptors;
+public:
+	BookRecognizer() {
+		m_db = new Database("small_db.yml.gz");
+		m_bshow = false;
+		m_thresh = 0.086;
+		m_nfeatures = 400;
+	}
+
+	~BookRecognizer() {
+		if(m_db) {
+			delete m_db;
+		}
+	}
+
+	void set_threshold(float thresh) {
+		m_thresh = thresh;
+	}
+
+	void set_num_features(int n_feat) {
+		m_nfeatures = n_feat;
+	}
+
+	void show_result(bool show) {
+		m_bshow = show;
+	}
+
+	int query_book(Mat &img_3c) {
+		QueryResults ret;
+		cv::Mat descriptors = this->extract_features(img_3c);
+		m_db->query(descriptors, ret, 4);
+
+		float score = ret[0].Score;
+		if(m_bshow) {
+			//cout<<"score: "<<score<<endl;
+			for(int i = 0; i < 4; i++) {
+				printf("%.8f ", ret[i].Score);
+			}
+			cout<<"| ";
+		}
+
+		if(score > m_thresh) {
+			int ans_idx = ret[0].Id;
+			return ans_idx;
+		}
+		return -1;
+	}
+
+private:
+	bool m_bshow;
+	float m_thresh;
+	float m_nfeatures;
+	Database *m_db = NULL;
+
+private:
+	cv::Mat extract_features(Mat &img_3c) {
+		ORBextractor ORB_ext(m_nfeatures, 1.2, 8, 20, 7);
+		vector<cv::KeyPoint> keypoints;
+		cv::Mat descriptors;
 	
-	Mat im = img_3c.clone();
-	cvtColor(im, im, COLOR_BGR2GRAY);
-	GaussianBlur(im, im, Size(7, 7), 0, 0);
-	equalizeHist(im, im);
+		Mat im = img_3c.clone();
+		cvtColor(im, im, COLOR_BGR2GRAY);
+		GaussianBlur(im, im, Size(7, 7), 0, 0);
+		equalizeHist(im, im);
 
-	Mat im_copy = im.clone();
-	(ORB_ext)(im, im_copy, keypoints, descriptors);
-	if(b_show)
-	{
-		drawKeypoints(im, keypoints, im, Scalar::all(-1), DrawMatchesFlags::DEFAULT);
-		imshow("keypoints", im);
-		waitKey(10);
+		Mat im_copy = im.clone();
+		(ORB_ext)(im, im_copy, keypoints, descriptors);
+		if(m_bshow) {
+			drawKeypoints(im, keypoints, im, Scalar::all(-1), DrawMatchesFlags::DEFAULT);
+			imshow("keypoints", im);
+			waitKey(10);
+		}
+		return descriptors;
 	}
-	return descriptors;
-}
-
-int find_book_id(Database &db, Mat &img_3c, int &n_features, bool b_show, float thresh=0.085)
-{
-	QueryResults ret;
-	cv::Mat descriptors = extract_features(img_3c, n_features, b_show);
-	db.query(descriptors, ret, 3);
-
-	float score = ret[0].Score;
-	if(b_show)
-	{
-		cout<<"score: "<<score<<endl;
-	}
-
-	if(score > thresh)
-	{
-		int max_idx = ret[0].Id;
-		int ans_idx = max_idx % 80;
-		return ans_idx;
-	}
-	return -1;
-}
+};
 
 
 int main(int argc,char **argv)
@@ -179,34 +206,54 @@ int main(int argc,char **argv)
 		return 0;
 	}
 
-	// load dictionary from file
-	Database db("small_db.yml.gz");
+	BookRecognizer recognizer;
+	recognizer.show_result(true);
+
 	vector<cv::Mat> all_images = loadImages(image_names);
 	VideoCapture cap(0);
 	cv::Mat im;
 
+	cout<<endl<<"test dataset"<<endl;
+	for(int i = 0; i < image_names.size(); i++) 
+	{
+		string cur_name = image_names[i];
+		cv::Mat im = cv::imread(cur_name, 1);
+		if(im.empty()) {
+		    cout<<"could not open im"<<endl;
+			return -1;
+		}
+
+		int ans_idx = recognizer.query_book(im);
+		if(ans_idx >= 0) {
+			cout<<"ans_idx: "<<ans_idx<<", matched: "<<cur_name<<", "<<image_names[ans_idx]<<endl;
+		} else {
+			cout<<"xxxxxxx: "<<cur_name<<endl;
+		}
+	}
+
+	cout<<"press any key to test camera"<<endl;
+	waitKey(0);
+
+	cout<<endl<<"test camera"<<endl;
 	while(true)
 	{
 		cap >> im;
 		if(im.empty()) {
-		    cout << "Could not open im" << endl;
+
+		    cout << "could not open im" << endl;
 			return -1;
 		}
-		
-		int ans_idx = find_book_id(db, im, nfeatures, true);
-		if(ans_idx >= 0)
-		{
-		    cout<<"ans_idx: "<< ans_idx << endl;
+		int ans_idx = recognizer.query_book(im);
+		if(ans_idx >= 0) {
 			Mat img_src = all_images[ans_idx].clone();
 		    imshow("answer", img_src);
-		   	waitKey(10);
-		}
-		else
-		{
-			cout<<"can not recognise the book......"<<endl;
+			cout<<"ans_idx: "<<ans_idx<<endl;
+			waitKey(10);
+		} else {
+			cout<<"..."<<endl;
 		}
 	}
-	
+
 	return 0;
 }
 
