@@ -118,6 +118,49 @@ void generate_db_file(vector<string> image_names)
 	cout<<"database file small_db.yml.gz saved"<<endl;
 }
 
+cv::Mat extract_features(Mat &img_3c, int &n_features, bool b_show)
+{
+	ORBextractor ORB_ext(n_features, 1.2, 8, 20, 7);
+	vector<cv::KeyPoint> keypoints;
+	cv::Mat descriptors;
+	
+	Mat im = img_3c.clone();
+	cvtColor(im, im, COLOR_BGR2GRAY);
+	GaussianBlur(im, im, Size(7, 7), 0, 0);
+	equalizeHist(im, im);
+
+	Mat im_copy = im.clone();
+	(ORB_ext)(im, im_copy, keypoints, descriptors);
+	if(b_show)
+	{
+		drawKeypoints(im, keypoints, im, Scalar::all(-1), DrawMatchesFlags::DEFAULT);
+		imshow("keypoints", im);
+		waitKey(10);
+	}
+	return descriptors;
+}
+
+int find_book_id(Database &db, Mat &img_3c, int &n_features, bool b_show, float thresh=0.085)
+{
+	QueryResults ret;
+	cv::Mat descriptors = extract_features(img_3c, n_features, b_show);
+	db.query(descriptors, ret, 3);
+
+	float score = ret[0].Score;
+	if(b_show)
+	{
+		cout<<"score: "<<score<<endl;
+	}
+
+	if(score > thresh)
+	{
+		int max_idx = ret[0].Id;
+		int ans_idx = max_idx % 80;
+		return ans_idx;
+	}
+	return -1;
+}
+
 
 int main(int argc,char **argv)
 {
@@ -145,55 +188,23 @@ int main(int argc,char **argv)
 	while(true)
 	{
 		cap >> im;
-		if(im.empty())
-		{
+		if(im.empty()) {
 		    cout << "Could not open im" << endl;
 			return -1;
 		}
-		imshow("org_rgb", im);
-
-		cvtColor(im, im, COLOR_BGR2GRAY);
-		GaussianBlur(im, im, Size(7, 7), 0, 0);
-		equalizeHist(im, im);
-
-		vector<cv::KeyPoint> keypoints_test;
-		cv::Mat descriptors_test;
-		vector<cv::Mat> features_test;
-		ORBextractor ORB_test1(nfeatures, 1.2, 8, 20, 7);
-		Mat im_copy = im.clone();
-		(ORB_test1)(im, im_copy, keypoints_test, descriptors_test);
-
-		drawKeypoints(im, keypoints_test, im, Scalar::all(-1), DrawMatchesFlags::DEFAULT);
-		features_test.push_back(descriptors_test);
 		
-		imshow("keypoints",im);
-		waitKey(10);
-
-		QueryResults ret;
-		db.query(features_test[0], ret, 3);
-		
-		int index_max = ret[0].Id;
-		float score_max = ret[0].Score;
-		cout<<"score_max: "<<score_max<<endl;
-		
-		if(score_max > 0.085)
+		int ans_idx = find_book_id(db, im, nfeatures, true);
+		if(ans_idx >= 0)
 		{
-		    int ans_idx = index_max % 80;
-		    cout << "ans_idx :" << ans_idx << endl;
-		    char str_lx[60];
-		    sprintf(str_lx, "score: %d", (int)(score_max*100));
-			cout<<str_lx<<endl;
-
+		    cout<<"ans_idx: "<< ans_idx << endl;
 			Mat img_src = all_images[ans_idx].clone();
-		    cv::putText(img_src, str_lx, cv::Point(100, 100), CV_FONT_HERSHEY_SIMPLEX, 2, cv::Scalar(0, 0, 255));
 		    imshow("answer", img_src);
 		   	waitKey(10);
 		}
 		else
 		{
-			cout << "can not recognise the book ...... " << endl;
+			cout<<"can not recognise the book......"<<endl;
 		}
-
 	}
 	
 	return 0;
