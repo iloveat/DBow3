@@ -1,0 +1,79 @@
+CV_4_ANDROID_HOME = /home/brycezou/Android/Turing_third/opencv-3.1.0/platforms/build_android_arm/install/sdk/native
+ARCHITECTURE = armeabi-v7a-hard
+
+INCLUDES += -I$(CV_4_ANDROID_HOME)/jni/include
+INCLUDES += -I$(CV_4_ANDROID_HOME)/jni/include/opencv
+INCLUDES += -I$(CV_4_ANDROID_HOME)/jni/include/opencv2
+INCLUDES += -I../src
+
+SOURCES += ../utils/orb/ORBextractor.cc
+SOURCES += ../src/*.cpp
+SOURCES += ../src/*.c
+SOURCES += ../utils/android_interface.cpp
+
+LIBS += $(CV_4_ANDROID_HOME)/libs/$(ARCHITECTURE)/libopencv_calib3d.a
+LIBS += $(CV_4_ANDROID_HOME)/libs/$(ARCHITECTURE)/libopencv_core.a
+LIBS += $(CV_4_ANDROID_HOME)/libs/$(ARCHITECTURE)/libopencv_features2d.a
+LIBS += $(CV_4_ANDROID_HOME)/libs/$(ARCHITECTURE)/libopencv_flann.a
+LIBS += $(CV_4_ANDROID_HOME)/libs/$(ARCHITECTURE)/libopencv_highgui.a
+LIBS += $(CV_4_ANDROID_HOME)/libs/$(ARCHITECTURE)/libopencv_imgcodecs.a
+LIBS += $(CV_4_ANDROID_HOME)/libs/$(ARCHITECTURE)/libopencv_imgproc.a
+LIBS += $(CV_4_ANDROID_HOME)/libs/$(ARCHITECTURE)/libopencv_ml.a
+LIBS += $(CV_4_ANDROID_HOME)/libs/$(ARCHITECTURE)/libopencv_objdetect.a
+LIBS += $(CV_4_ANDROID_HOME)/libs/$(ARCHITECTURE)/libopencv_photo.a
+LIBS += $(CV_4_ANDROID_HOME)/libs/$(ARCHITECTURE)/libopencv_shape.a
+LIBS += $(CV_4_ANDROID_HOME)/libs/$(ARCHITECTURE)/libopencv_stitching.a
+LIBS += $(CV_4_ANDROID_HOME)/libs/$(ARCHITECTURE)/libopencv_superres.a
+LIBS += $(CV_4_ANDROID_HOME)/libs/$(ARCHITECTURE)/libopencv_ts.a
+LIBS += $(CV_4_ANDROID_HOME)/libs/$(ARCHITECTURE)/libopencv_video.a
+LIBS += $(CV_4_ANDROID_HOME)/libs/$(ARCHITECTURE)/libopencv_videoio.a
+LIBS += $(CV_4_ANDROID_HOME)/libs/$(ARCHITECTURE)/libopencv_videostab.a
+LIBS += $(CV_4_ANDROID_HOME)/libs/$(ARCHITECTURE)/libopencv_java3.so
+LIBS += $(CV_4_ANDROID_HOME)/3rdparty/libs/$(ARCHITECTURE)/libIlmImf.a
+LIBS += $(CV_4_ANDROID_HOME)/3rdparty/libs/$(ARCHITECTURE)/liblibjasper.a
+LIBS += $(CV_4_ANDROID_HOME)/3rdparty/libs/$(ARCHITECTURE)/liblibjpeg.a
+LIBS += $(CV_4_ANDROID_HOME)/3rdparty/libs/$(ARCHITECTURE)/liblibpng.a
+LIBS += $(CV_4_ANDROID_HOME)/3rdparty/libs/$(ARCHITECTURE)/liblibtiff.a
+LIBS += $(CV_4_ANDROID_HOME)/3rdparty/libs/$(ARCHITECTURE)/liblibwebp.a
+
+
+CXX = arm-linux-androideabi-clang++
+
+
+# never change the order
+XXFLAGS += -std=c++11 -mhard-float -ldl -lz -llog -O3 -Wl,--no-warn-mismatch -lm_hard
+
+
+libturing_story.so : 
+	$(CXX) -shared -o libturing_story.so $(INCLUDES) $(SOURCES) $(LIBS) $(XXFLAGS)
+
+
+clean :
+	rm -f libturing_story.so
+
+
+.PHONY : clean
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
