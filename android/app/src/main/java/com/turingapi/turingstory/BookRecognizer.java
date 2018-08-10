@@ -27,7 +27,7 @@ public class BookRecognizer {
         return jniFree();
     }
 
-    public int SetNumFeatures(int num) {
+    public int setNumFeatures(int num) {
         int ret = jniSetNumFeatures(num);
         if(ret < 0) {
             Log.e(TAG, "Please call init() first.");
@@ -35,7 +35,7 @@ public class BookRecognizer {
         return ret;
     }
 
-    public int SetThreshold(float thresh) {
+    public int setThreshold(float thresh) {
         int ret = jniSetThreshold(new float[]{ thresh });
         if(ret < 0) {
             Log.e(TAG, "Please call init() first.");
@@ -44,10 +44,15 @@ public class BookRecognizer {
     }
 
     public int queryBook(Bitmap bitmap) {
+        setThreshold(0.12f);
         byte[] bytes = bitmap2byte(bitmap);
         int width = bitmap.getWidth();
         int height = bitmap.getHeight();
         return jniQueryBook(bytes, width, height);
+    }
+
+    public float[] getScores() {
+        return jniGetScores();
     }
 
     private byte[] bitmap2byte(final Bitmap bitmap) {
@@ -69,4 +74,5 @@ public class BookRecognizer {
     private native static int jniSetNumFeatures(int num);
     private native static int jniSetThreshold(float []thresh);
     private native static int jniQueryBook(byte []image, int width, int height);
+    private native static float[] jniGetScores();
 }

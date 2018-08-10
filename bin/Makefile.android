@@ -1,5 +1,5 @@
-CV_4_ANDROID_HOME = /home/brycezou/Android/Turing_third/opencv-3.1.0/platforms/build_android_arm/install/sdk/native
-ARCHITECTURE = armeabi-v7a-hard
+CV_4_ANDROID_HOME = /home/brycezou/Android/Turing_third/opencv-3.1.0/platforms/build_android_v7a/install/sdk/native
+ARCHITECTURE = armeabi-v7a
 
 INCLUDES += -I$(CV_4_ANDROID_HOME)/jni/include
 INCLUDES += -I$(CV_4_ANDROID_HOME)/jni/include/opencv
@@ -41,7 +41,7 @@ CXX = arm-linux-androideabi-clang++
 
 
 # never change the order
-XXFLAGS += -std=c++11 -mhard-float -ldl -lz -llog -O3 -Wl,--no-warn-mismatch -lm_hard
+XXFLAGS += -std=c++11 -ldl -lz -llog -O3 -Wl,--no-warn-mismatch
 
 
 libturing_story.so : 

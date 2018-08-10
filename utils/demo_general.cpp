@@ -96,8 +96,8 @@ vector<cv::Mat> loadImages(std::vector<string> path_to_images) throw (std::excep
 void generate_db_file(vector<string> image_names)
 {
 	vector<cv::Mat> features = loadFeatures(image_names);
-	const int k = 12;
-	const int L = 6;
+	const int k = 10;
+	const int L = 4;
 	const WeightingType weight = TF_IDF;
 	const ScoringType score = L1_NORM;
 	DBoW3::Vocabulary voc(k, L, weight, score);

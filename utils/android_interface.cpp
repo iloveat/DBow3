@@ -38,9 +38,11 @@ using namespace ORB_SLAM2;
 class BookRecognizer
 {
 public:
+	float m_scores[3];
+
+public:
 	BookRecognizer(const char *db_path) {
 		m_db = new Database(db_path);
-		m_bshow = false;
 		m_thresh = 0.086;
 		m_nfeatures = 400;
 	}
@@ -59,26 +61,16 @@ public:
 		m_nfeatures = n_feat;
 	}
 
-	void show_result(bool show) {
-		m_bshow = show;
-	}
-
 	int query_book(Mat &img_3c) {
 		QueryResults ret;
 		cv::Mat descriptors = this->extract_features(img_3c);
-		m_db->query(descriptors, ret, 2);
+		m_db->query(descriptors, ret, 3);
 
-		float score = ret[0].Score;
-		if(m_bshow) {
-			//cout<<"score: "<<score<<endl;
-			for(int i = 0; i < 2; i++) {
-				printf("%.8f ", ret[i].Score);
-			}
-			cout<<"| ";
+		for(int i = 0; i < 3; i++) {
+			m_scores[i] = ret[i].Score;
 		}
 
-		LOGI("score: %.6f\0", score);		
-
+		float score = ret[0].Score;
 		if(score > m_thresh) {
 			int ans_idx = ret[0].Id;
 			return ans_idx;
@@ -87,7 +79,6 @@ public:
 	}
 
 private:
-	bool m_bshow;
 	float m_thresh;
 	float m_nfeatures;
 	Database *m_db = NULL;
@@ -97,7 +88,7 @@ private:
 		ORBextractor ORB_ext(m_nfeatures, 1.2, 8, 20, 7);
 		vector<cv::KeyPoint> keypoints;
 		cv::Mat descriptors;
-	
+
 		Mat im = img_3c.clone();
 		cvtColor(im, im, COLOR_BGR2GRAY);
 		GaussianBlur(im, im, Size(7, 7), 0, 0);
@@ -105,11 +96,6 @@ private:
 
 		Mat im_copy = im.clone();
 		(ORB_ext)(im, im_copy, keypoints, descriptors);
-		if(m_bshow) {
-			drawKeypoints(im, keypoints, im, Scalar::all(-1), DrawMatchesFlags::DEFAULT);
-			imshow("keypoints", im);
-			waitKey(10);
-		}
 		return descriptors;
 	}
 };
@@ -202,6 +188,28 @@ jint JNIEXPORT JNICALL Java_com_turingapi_turingstory_BookRecognizer_jniSetNumFe
 	{
 		pRecognizer->set_num_features(nfeatures);
 		return 1;
+	}
+}
+
+jfloatArray JNIEXPORT JNICALL Java_com_turingapi_turingstory_BookRecognizer_jniGetScores(JNIEnv* env, jobject thiz)
+{
+	const int len = 3;
+	jfloatArray array = env->NewFloatArray(len);
+
+	if(pRecognizer == NULL)
+	{
+		LOGE("Please call init() first.");
+		float scores[3];
+		scores[0] = -1;
+		scores[1] = -1;
+		scores[2] = -1;
+		env->SetFloatArrayRegion(array, 0, len, (jfloat*)scores);
+		return array;
+	}
+	else
+	{
+		env->SetFloatArrayRegion(array, 0, len, (jfloat*)(pRecognizer->m_scores));
+		return array;
 	}
 }
 
